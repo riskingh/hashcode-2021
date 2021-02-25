@@ -8,19 +8,31 @@
 #include <map>
 #include <random>
 #include <set>
+#include <future>
 
 const int STEP_NUM = 10;
-const int SOLUTION_PICK_NUM = 5;
+const int SOLUTION_PICK_NUM = 30;
+
+struct Modification {
+    int intersection_idx;
+    int street_idx;
+    int delta;
+};
+
+struct LocalSolution {
+    int score;
+    DebugInfo debug_info;
+    std::vector<Modification> solution;
+};
 
 class IterationSolution : public ISolution {
 
 public:
 
     GameSolution solve(const Game& game) override {
-        auto rng = std::default_random_engine{static_cast<unsigned int>(218)};
         auto bool_dist = std::uniform_int_distribution<>(0, 1);
 
-        auto solution = MakeFirstSolution()->solve(game);
+        auto solution = MakeFirstSolution2()->solve(game);
 
         std::map<int, std::map<int, int>> solution_intersection_to_street_idx;
         for (int intersection_idx = 0; intersection_idx != solution.intersection_assignment.size(); ++intersection_idx) {
@@ -54,13 +66,11 @@ public:
                 intersection_to_street_wait_sum[event.intersection_idx][event.street_idx] += event.wait_time;
             }
 
-            int best_score = -1;
-            const GameSolution solution_copy = solution;
+            auto solve = [&](int seed) {
+                auto rng = std::default_random_engine{static_cast<unsigned int>(seed)};
+                std::vector<Modification> modifications;
 
-            for (int pick = 0; pick != SOLUTION_PICK_NUM; ++pick) {
-                GameSolution new_solution = solution_copy;
-
-                for (int i = 0; i != std::min(30, (int)intersection_weighted.size()); ++i) {
+                for (int i = 0; i != std::min(20, (int)intersection_weighted.size()); ++i) {
                     int intersection_idx = intersection_weighted[i].second;
                     if (bool_dist(rng)) continue;
 
@@ -70,27 +80,62 @@ public:
                     }
                     std::sort(weighted_streets.rbegin(), weighted_streets.rend());
 
-                    ignore_intersections.insert(intersection_idx);
+                    // ignore_intersections.insert(intersection_idx);
                     for (int j = 0; j != std::min(1, (int)weighted_streets.size()); ++j) {
                         int street_idx = weighted_streets[j].second;
-                        new_solution.intersection_assignment[intersection_idx][solution_intersection_to_street_idx[intersection_idx][street_idx]].second += \
-                            std::uniform_int_distribution<>(1, 3)(rng);
+                        modifications.emplace_back(Modification{intersection_idx, street_idx, std::uniform_int_distribution<>(1, 3)(rng)});
                     }
                 }
 
+                GameSolution new_solution = build_solution(solution, solution_intersection_to_street_idx, modifications);
                 DebugInfo new_debug_info;
                 auto new_score = Score(game, new_solution, &new_debug_info);
-                if (new_score > best_score) {
-                    best_score = new_score;
-                    solution = new_solution;
-                    score = new_score;
-                    debug_info = new_debug_info;
+                return LocalSolution{new_score, new_debug_info, modifications};
+            };
+
+            std::vector<std::thread> threads;
+            std::vector<std::future<LocalSolution>> futures;
+
+            for (int i = 0; i != SOLUTION_PICK_NUM; ++i) {
+                // threads.emplace_back(solve, i);
+                futures.emplace_back(std::async(std::launch::async, solve, i));
+            }
+            for (auto &thread : futures) {
+                thread.wait();
+            }
+
+            int best_score = -1, best_score_idx;
+            std::vector<LocalSolution> solutions;
+
+            for (int i = 0; i != SOLUTION_PICK_NUM; ++i) {
+                solutions.emplace_back(futures[i].get());
+                if (solutions[i].score > best_score) {
+                    best_score = solutions[i].score;
+                    best_score_idx = i;
                 }
+            }
+
+            score = solutions[best_score_idx].score;
+            debug_info = solutions[best_score_idx].debug_info;
+            solution = build_solution(solution, solution_intersection_to_street_idx, solutions[best_score_idx].solution);
+
+            for (const auto& modification : solutions[best_score_idx].solution) {
+                ignore_intersections.insert(modification.intersection_idx);
             }
         }
 
         return solution;
     }
+
+    GameSolution build_solution(
+        GameSolution solution,
+        const std::map<int, std::map<int, int>>& solution_intersection_to_street_idx,
+        const std::vector<Modification>& modifications) {
+            for (const auto& modification : modifications) {
+                solution.intersection_assignment[modification.intersection_idx][solution_intersection_to_street_idx.at(modification.intersection_idx).at(modification.street_idx)].second += modification.delta;
+            }
+            return solution;
+        }
 };
 
 std::unique_ptr<ISolution> MakeIterationSolution() {
