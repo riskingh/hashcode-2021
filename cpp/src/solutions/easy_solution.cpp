@@ -5,7 +5,7 @@
 #include <utility>
 #include <cmath>
 
-const int APPROX_INTERSECTION_TURNAROUND = 5;
+const int APPROX_INTERSECTION_TURNAROUND = 3;
 
 class FirstSolution : public ISolution {
 
@@ -23,14 +23,14 @@ public:
             cars_way_length.push_back(car_way_length);
         }
         std::sort(cars_way_length.begin(), cars_way_length.end());
-        long long threshold = cars_way_length[(cars_way_length.size() * 85 / 100)];
+        long long threshold = cars_way_length[(cars_way_length.size() * 0 / 100)];
 
         for (const auto& car : game.cars) {
             int car_way_length = 0;
             for (const auto& street_id : car.path_streets) {
                 car_way_length += game.streets[street_id].L;
             }
-            if (car_way_length > threshold) {
+            if (car_way_length < threshold) {
                 continue;
             }
             for (const auto& street_id : car.path_streets) {
@@ -45,7 +45,7 @@ public:
 
             std::vector<std::pair<int, int>> weighted_streets;
             for (const auto& street_id : in_streets) {
-                weighted_streets.emplace_back(street_car_count[street_id], street_id);
+                weighted_streets.emplace_back(street_car_count[street_id] / 2, street_id);
             }
             std::sort(weighted_streets.rbegin(), weighted_streets.rend());
             int sum = 0;
