@@ -114,6 +114,21 @@ struct DebugInfo {
     int cars_not_finished = 0;
 
     std::vector<Event> events;
+
+
+    void Print() {
+        std::cerr << "Cars not finished: " << cars_not_finished << std::endl;
+        for (const auto& event : events) {
+            std::cerr << 
+                "car\t" << event.car_idx << 
+                "\tstreet\t" << event.street_idx << 
+                "\tintersection\t" << event.intersection_idx << 
+                "\tarrive_ts\t" << event.arrive_timestamp << 
+                "\twait_time\t" << event.wait_time << 
+                "\tis_first\t" << int(event.is_first) << 
+                std::endl;
+        }
+    }
 };
 
 inline int64_t Score(const Game& input, const GameSolution& solution, DebugInfo* debug_info_sink) {
