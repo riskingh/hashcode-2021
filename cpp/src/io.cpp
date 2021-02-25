@@ -45,3 +45,25 @@ Game read_game(std::istream& in) {
 
     return game;
 }
+
+void write_game_solution(std::ostream& out, const Game& game, const GameSolution& solution) {
+    int count_output = 0;
+
+    for (const auto& elem : solution.intersection_assignment) {
+        if (!elem.empty()) {
+            ++count_output;
+        }
+    }
+
+    out << count_output << '\n';
+
+    for (int i = 0; i != solution.intersection_assignment.size(); ++i) {
+        const auto& assignment = solution.intersection_assignment[i];
+        if (assignment.empty()) continue;
+
+        out << i << '\n' << assignment.size() << '\n';
+        for (const auto& [street_id, duration] : assignment) {
+            out << game.external_street_mapping[street_id] << ' ' << duration << '\n';
+        }
+    }
+}
