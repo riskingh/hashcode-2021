@@ -23,6 +23,9 @@ struct StreetImpl {
     }
 
     int pop() {
+        if (empty()) {
+            throw "EMPTY";
+        }
         auto res = queue.front();
         queue.pop();
         return res;
@@ -66,7 +69,7 @@ struct IntersectionImpl {
             return -1;
         }
         int64_t reminder = timestamp % period;
-        auto schedule_idx = std::upper_bound(prefix_sum.begin(), prefix_sum.end(), reminder) - prefix_sum.begin();
+        auto schedule_idx = std::upper_bound(prefix_sum.begin(), prefix_sum.end(), reminder) - prefix_sum.begin() - 1;
         return schedule[schedule_idx].first;
     }
 };
@@ -98,7 +101,6 @@ struct CarImpl {
 
 
 inline int64_t Score(const Game& input, const GameSolution& solution) {
-    std::cerr << "START SCORE " << std::endl;
     std::vector<std::vector<std::pair<int, int>>> car_events(input.D + 1);
     int64_t total_score = 0;
     std::vector<IntersectionImpl> intersections;
@@ -126,14 +128,11 @@ inline int64_t Score(const Game& input, const GameSolution& solution) {
         intersections[idx].set_schedule(schedule);
         ++idx;
     }
-    std::cerr << "START SIMULATION " << std::endl;
 
     for (int64_t timestamp = 0; timestamp <= input.D; ++timestamp) {
         for (const auto& event : car_events[timestamp]) {
-
             auto car_idx = event.first;
             auto street_idx = event.second;
-            std::cerr << "CAR EVENT " << car_idx << " " << street_idx << std::endl;
             if (cars[car_idx].is_finished()) {
                 total_score += input.F + (input.D - timestamp);
             } else {
