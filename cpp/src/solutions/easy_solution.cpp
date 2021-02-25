@@ -5,7 +5,7 @@
 #include <utility>
 #include <cmath>
 
-const int APPROX_INTERSECTION_TURNAROUND = 20;
+const int APPROX_INTERSECTION_TURNAROUND = 5;
 
 class FirstSolution : public ISolution {
 
@@ -14,7 +14,25 @@ public:
     GameSolution solve(const Game& game) override {
         std::vector<int> street_car_count(game.S);
 
+        std::vector<long long> cars_way_length;
         for (const auto& car : game.cars) {
+            int car_way_length = 0;
+            for (const auto& street_id : car.path_streets) {
+                car_way_length += game.streets[street_id].L;
+            }
+            cars_way_length.push_back(car_way_length);
+        }
+        std::sort(cars_way_length.begin(), cars_way_length.end());
+        long long threshold = cars_way_length[(cars_way_length.size() * 85 / 100)];
+
+        for (const auto& car : game.cars) {
+            int car_way_length = 0;
+            for (const auto& street_id : car.path_streets) {
+                car_way_length += game.streets[street_id].L;
+            }
+            if (car_way_length > threshold) {
+                continue;
+            }
             for (const auto& street_id : car.path_streets) {
                 ++street_car_count[street_id];
             }
