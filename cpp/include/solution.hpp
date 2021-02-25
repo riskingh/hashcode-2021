@@ -15,10 +15,14 @@ public:
 };
 
 std::unique_ptr<ISolution> MakeFirstSolution();
+std::unique_ptr<ISolution> MakeFirstSolution2();
 
 inline std::unique_ptr<ISolution> get_solution(const std::string& name) {
     if (name == "easy") {
         return MakeFirstSolution();
+    }
+    if (name == "easy2") {
+        return MakeFirstSolution2();
     }
     throw std::runtime_error(name);
 }
