@@ -1,7 +1,7 @@
 #include "game.hpp"
 #include "solution.hpp"
 
-#include<utility>
+#include <utility>
 
 class FirstSolution : public ISolution {
 

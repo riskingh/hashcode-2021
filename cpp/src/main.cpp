@@ -1,5 +1,6 @@
 #include "game.hpp"
 #include "solution.hpp"
+#include "scoring.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -28,5 +29,7 @@ int main(int argc, char** argv) {
     auto output = solution->solve(input);
 
     write_game_solution(*ostream, input, output);
+    auto score = Score(input, output);
+    std::cerr << argv[1] << " score is " << score << std::endl;
     return 0;
 }
