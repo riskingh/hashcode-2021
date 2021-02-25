@@ -42,6 +42,11 @@ struct Intersection {
     std::vector<int> out_streets;  
 };
 
+struct GameSolution {
+    std::vector<std::vector<std::pair<int, int>>> intersection_assignment;
+};
+
 Game read_game(std::istream&);
+void write_game_solution(std::ostream&, const Game&, const GameSolution&);
 
 #endif // GAME_H
