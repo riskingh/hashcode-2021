@@ -8,7 +8,7 @@
 #include <iostream>
 
 int main(int argc, char** argv) {
-    assert (argc == 3 || argc == 4);
+    assert (argc == 3 || argc == 4 || argc == 5);
     std::ifstream istream(argv[1]);
     std::ostream* ostream = &std::cout;
     std::unique_ptr<std::ofstream> ofstream;
@@ -29,7 +29,23 @@ int main(int argc, char** argv) {
     auto output = solution->solve(input);
 
     write_game_solution(*ostream, input, output);
-    auto score = Score(input, output);
+    DebugInfo debug_info;
+    auto score = Score(input, output, &debug_info);
+
     std::cerr << argv[1] << " score is " << score << std::endl;
+
+
+    
+    // std::cerr << "Cars not finished: " << debug_info.cars_not_finished << std::endl;
+    // for (const auto& event : debug_info.events) {
+    //     std::cerr << 
+    //         "car\t" << event.car_idx << 
+    //         "\tstreet\t" << event.street_idx << 
+    //         "\tintersection\t" << event.intersection_idx << 
+    //         "\tarrive_ts\t" << event.arrive_timestamp << 
+    //         "\twait_time\t" << event.wait_time << 
+    //         "\tis_first\t" << int(event.is_first) << 
+    //         std::endl;
+    // }
     return 0;
 }

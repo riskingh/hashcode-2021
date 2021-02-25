@@ -77,6 +77,7 @@ struct IntersectionImpl {
 struct CarImpl {
     const Car& data_;
     int street_rel_idx = 0;
+    int64_t arrive_timestamp = 0;
 
     explicit CarImpl(const Car& data)
         : data_(data)
@@ -100,7 +101,24 @@ struct CarImpl {
 };
 
 
-inline int64_t Score(const Game& input, const GameSolution& solution) {
+struct DebugInfo {
+    struct Event {
+        int car_idx;
+        int street_idx;
+        int intersection_idx;
+        int64_t arrive_timestamp;
+        int64_t wait_time;
+        bool is_first = false;
+    };
+
+    int cars_not_finished = 0;
+
+    std::vector<Event> events;
+};
+
+inline int64_t Score(const Game& input, const GameSolution& solution, DebugInfo* debug_info_sink) {
+    DebugInfo debug_info;
+
     std::vector<std::vector<std::pair<int, int>>> car_events(input.D + 1);
     int64_t total_score = 0;
     std::vector<IntersectionImpl> intersections;
@@ -118,8 +136,10 @@ inline int64_t Score(const Game& input, const GameSolution& solution) {
     int idx = 0;
     for (const auto& data : input.cars) {
         cars.emplace_back(data);
-        const auto& car = cars.back();
+        auto& car = cars.back();
         streets[car.data_.path_streets[0]].push(idx);
+        car.arrive_timestamp = 0;
+        ++debug_info.cars_not_finished;
         ++idx;
     }
 
@@ -135,8 +155,10 @@ inline int64_t Score(const Game& input, const GameSolution& solution) {
             auto street_idx = event.second;
             if (cars[car_idx].is_finished()) {
                 total_score += input.F + (input.D - timestamp);
+                --debug_info.cars_not_finished;
             } else {
                 streets[street_idx].push(car_idx);
+                cars[car_idx].arrive_timestamp = timestamp;
             }
         }
 
@@ -148,6 +170,16 @@ inline int64_t Score(const Game& input, const GameSolution& solution) {
             }
             if (!streets[street_idx].empty()) {
                 auto car_idx = streets[street_idx].pop();
+                DebugInfo::Event event;
+                
+                event.car_idx = car_idx;
+                event.street_idx = street_idx;
+                event.intersection_idx = intersection_idx;
+                event.arrive_timestamp = cars[car_idx].arrive_timestamp;
+                event.wait_time = timestamp - event.arrive_timestamp;
+                event.is_first = (cars[car_idx].street_rel_idx == 0);
+                debug_info.events.push_back(std::move(event));
+
                 cars[car_idx].move();
                 auto next_street_idx = cars[car_idx].get_current_street();
                 auto length = streets[next_street_idx].data_.L;
@@ -156,6 +188,10 @@ inline int64_t Score(const Game& input, const GameSolution& solution) {
                 }
             }
         }
+    }
+
+    if (debug_info_sink != nullptr) {
+        *debug_info_sink = std::move(debug_info);
     }
 
     return total_score;
