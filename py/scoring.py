@@ -101,7 +101,7 @@ with open(args.input) as fp:
         begin, end, name, length = finput().split()
         begin = int(begin)
         end = int(end)
-        length = int(end)
+        length = int(length)
         streets.append(Street(name=name, length=length, begin=begin, end=end, idx=idx))
         intersections[begin].add_out_street(idx)
         intersections[end].add_in_street(idx)
@@ -149,34 +149,25 @@ CAR_EVENTS = [[] for _ in range(total_duration + 1)]
 total_score = 0
 
 for timestamp in tqdm.trange(0, total_duration + 1):
-    print("TIMESTAMP", timestamp)
     # lookup all cat events and push them
     for event in CAR_EVENTS[timestamp]:
         car_idx, street_idx = event
         if vehicles[car_idx].is_finished():
-            print('TIMESTAMP', timestamp, 'CAR', car_idx, 'IS FINISHED', 'SCORE', finish_bonus + (total_duration - timestamp))
             total_score += finish_bonus + (total_duration - timestamp)
         else:
             streets[street_idx].push(car_idx)
-            print(vehicles[car_idx].path)
-            print('TIMESTAMP', timestamp, 'car', car_idx, 'pushed', street_idx, streets[street_idx].name)
 
     for intersection_idx, intersection in enumerate(intersections):
         street_idx = intersection.get_current_street(timestamp)
         if street_idx is None:
             continue
-        # print(intersection_idx, street_idx, streets[street_idx].name)
         if not streets[street_idx].empty():
             car_idx = streets[street_idx].pop()
             vehicles[car_idx].move()
-            # assert not vehicles[car_idx].is_finished()
             next_street_idx = vehicles[car_idx].get_current_street()
             length = streets[next_street_idx].length
             if timestamp + length <= total_duration:
                 CAR_EVENTS[timestamp + length].append((car_idx, next_street_idx))
-                print('TIMESTAMP', timestamp, 'car', car_idx, 'next street', next_street_idx, streets[next_street_idx].name, length)
-            else:
-                print('Too long', timestamp + length, car_idx)
 
 print(total_score)
 
