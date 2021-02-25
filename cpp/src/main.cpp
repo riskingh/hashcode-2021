@@ -34,18 +34,6 @@ int main(int argc, char** argv) {
 
     std::cerr << argv[1] << " score is " << score << std::endl;
 
-
-    
-    // std::cerr << "Cars not finished: " << debug_info.cars_not_finished << std::endl;
-    // for (const auto& event : debug_info.events) {
-    //     std::cerr << 
-    //         "car\t" << event.car_idx << 
-    //         "\tstreet\t" << event.street_idx << 
-    //         "\tintersection\t" << event.intersection_idx << 
-    //         "\tarrive_ts\t" << event.arrive_timestamp << 
-    //         "\twait_time\t" << event.wait_time << 
-    //         "\tis_first\t" << int(event.is_first) << 
-    //         std::endl;
-    // }
+    // debug_info.Print();
     return 0;
 }
