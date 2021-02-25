@@ -7,9 +7,11 @@
 #include <random>
 #include "scoring.hpp"
 
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/post.hpp>
+
 const int APPROX_INTERSECTION_TURNAROUND = 20;
 const auto GOOD_APPROX = {1, 2, 3, 6, 23};
-auto rng = std::default_random_engine{static_cast<unsigned int>(0)};
 
 class FirstSolution2 : public ISolution {
 
@@ -19,25 +21,33 @@ public:
         GameSolution sol, best_sol;
         int64_t score = 0, best_score = 0, best_approx_sol = -1;
 
-        for (auto i : GOOD_APPROX) {
-            for (int seed = 1; seed < 10; ++seed) {
-                rng = std::default_random_engine{static_cast<unsigned int>(seed)};
-                DebugInfo debug_info;
-                sol = solve_once(game, i);
-                score = Score(game, sol, &debug_info);
-                if (score > best_score) {
-                    best_sol = sol;
-                    best_score = score;
-                    best_approx_sol = i;
+        for (auto approx_smth : GOOD_APPROX) {
+            int max_seed = 30;
+            boost::asio::thread_pool pool(max_seed);
+            std::vector<GameSolution> solutions(max_seed);
+            std::vector<int64_t> scores(max_seed);
+
+            for (int seed = 0; seed < max_seed; ++seed) {
+                boost::asio::post(pool, [this, approx_smth, seed, &solutions, &scores, &game] {
+                    solutions[seed] = solve_once(game, approx_smth, seed);
+                    scores[seed] = Score(game, solutions[seed], nullptr);
+                });
+            }
+            pool.join();
+
+            for (int seed = 0; seed < max_seed; ++seed) {
+                if (scores[seed] > best_score) {
+                    best_sol = solutions[seed];
+                    best_score = scores[seed];
                 }
             }
         }
-        std::cerr << "Found solution with approx_smth = " << best_approx_sol << std::endl;
 
         return best_sol;
     }
 
-    GameSolution solve_once(const Game& game, int approx_smth) {
+    GameSolution solve_once(const Game& game, int approx_smth, int seed) {
+        auto rng = std::default_random_engine{static_cast<unsigned int>(seed)};
         std::vector<int> street_car_count(game.S);
 
         for (const auto& car : game.cars) {
