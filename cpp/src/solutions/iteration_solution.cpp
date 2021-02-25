@@ -11,7 +11,7 @@
 #include <future>
 
 const int STEP_NUM = 10;
-const int SOLUTION_PICK_NUM = 30;
+const int SOLUTION_PICK_NUM = 90;
 
 struct Modification {
     int intersection_idx;
